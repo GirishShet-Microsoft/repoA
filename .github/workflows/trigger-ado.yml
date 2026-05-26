@@ -1,7 +1,7 @@
 name: Trigger ADO Pipeline
 
 on:
-  push:
+  pull_request:
     branches:
       - main
 
@@ -10,51 +10,40 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Trigger Azure DevOps Pipeline via REST
+      - name: Trigger ADO Pipeline
         env:
           ADO_TOKEN: ${{ secrets.ADO_TOKEN }}
-          AZURE_DEVOPS_URL: https://dev.azure.com/girishnshet10/inheritedagile
-          BUILD_ID: "32"
-          SOURCE_BRANCH: refs/heads/main
-          TRIGGER_REPOSITORY: ${{ github.repository }}
-          TRIGGER_BRANCH: ${{ github.ref }}
-          TRIGGER_SHA: ${{ github.sha }}
-          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+          AZURE_DEVOPS_URL: https://dev.azure.com/<ORG>/<PROJECT>
+          BUILD_ID: "52"
 
         run: |
           set -e
 
-          echo "Commit message length:"
-          echo "GitHub SHA: $TRIGGER_SHA"
-          echo "${#COMMIT_MESSAGE}"
+          PR_REF="refs/pull/${{ github.event.pull_request.number }}/merge"
+
+          COMMIT_MESSAGE="${{ github.event.pull_request.title }}
+
+          $(python3 -c "print('LONGTEXT'*5000)")"
 
           PAYLOAD=$(jq -n \
             --argjson id "$BUILD_ID" \
-            --arg source_branch "$SOURCE_BRANCH" \
-            --arg branch "$TRIGGER_BRANCH" \
-            --arg repo "$TRIGGER_REPOSITORY" \
-            --arg sha "$TRIGGER_SHA" \
+            --arg source_branch "$PR_REF" \
+            --arg sha "${{ github.event.pull_request.head.sha }}" \
             --arg message "$COMMIT_MESSAGE" \
             '{
               definition: { id: $id },
               reason: "manual",
               sourceBranch: $source_branch,
               triggerInfo: {
-                "ci.triggerRepository": $repo,
-                "ci.sourceBranch": $branch,
                 "ci.sourceVersion": $sha,
                 "ci.message": $message
               }
             }')
 
-          echo "Payload:"
-          echo "$PAYLOAD"
+          echo "Payload created successfully"
 
-          HTTP_RESPONSE=$(curl -s -w "HTTPSTATUS:%{http_code}" \
-            -X POST \
+          curl -X POST \
             -H "Authorization: Bearer $ADO_TOKEN" \
             -H "Content-Type: application/json" \
             -d "$PAYLOAD" \
-            "$AZURE_DEVOPS_URL/_apis/build/builds?api-version=7.0")
-
-          echo "$HTTP_RESPONSE"
+            "$AZURE_DEVOPS_URL/_apis/build/builds?api-version=7.0"
