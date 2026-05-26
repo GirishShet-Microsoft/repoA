@@ -16,19 +16,26 @@ jobs:
           AZURE_DEVOPS_URL: https://dev.azure.com/girishnshet10/inheritedagile
           BUILD_ID: "32"
 
+          SOURCE_BRANCH: ${{ github.ref }}
+          TRIGGER_SHA: ${{ github.sha }}
+
         run: |
           set -e
 
-          PR_REF="refs/pull/${{ github.event.pull_request.number }}/merge"
+          echo "GitHub Ref: $SOURCE_BRANCH"
+          echo "GitHub SHA: $TRIGGER_SHA"
 
-          COMMIT_MESSAGE="${{ github.event.pull_request.title }}
+          COMMIT_MESSAGE="${{ github.event.head_commit.message }}
 
           $(python3 -c "print('LONGTEXT'*5000)")"
 
+          echo "Commit message length:"
+          echo "${#COMMIT_MESSAGE}"
+
           PAYLOAD=$(jq -n \
             --argjson id "$BUILD_ID" \
-            --arg source_branch "$PR_REF" \
-            --arg sha "${{ github.event.pull_request.head.sha }}" \
+            --arg source_branch "$SOURCE_BRANCH" \
+            --arg sha "$TRIGGER_SHA" \
             --arg message "$COMMIT_MESSAGE" \
             '{
               definition: { id: $id },
@@ -42,8 +49,23 @@ jobs:
 
           echo "Payload created successfully"
 
-          curl -X POST \
+          HTTP_RESPONSE=$(curl -s -w "HTTPSTATUS:%{http_code}" \
+            -X POST \
             -H "Authorization: Bearer $ADO_TOKEN" \
             -H "Content-Type: application/json" \
             -d "$PAYLOAD" \
-            "$AZURE_DEVOPS_URL/_apis/build/builds?api-version=7.0"
+            "$AZURE_DEVOPS_URL/_apis/build/builds?api-version=7.0")
+
+          HTTP_BODY=$(echo "$HTTP_RESPONSE" | sed -e 's/HTTPSTATUS\:.*//g')
+          HTTP_STATUS=$(echo "$HTTP_RESPONSE" | tr -d '\n' | sed -e 's/.*HTTPSTATUS://')
+
+          echo "HTTP Status: $HTTP_STATUS"
+          echo "Response Body:"
+          echo "$HTTP_BODY"
+
+          if [ "$HTTP_STATUS" -lt 200 ] || [ "$HTTP_STATUS" -ge 300 ]; then
+            echo "Failed to trigger pipeline"
+            exit 1
+          fi
+
+          echo "Pipeline triggered successfully"
