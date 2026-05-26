@@ -1,0 +1,59 @@
+name: Trigger ADO Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Trigger Azure DevOps Pipeline via REST
+        env:
+          ADO_TOKEN: ${{ secrets.ADO_TOKEN }}
+          AZURE_DEVOPS_URL: https://dev.azure.com/<ORG>/<PROJECT>
+          BUILD_ID: "52"
+          SOURCE_BRANCH: refs/heads/main
+          TRIGGER_REPOSITORY: ${{ github.repository }}
+          TRIGGER_BRANCH: ${{ github.ref }}
+          TRIGGER_SHA: ${{ github.sha }}
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+
+        run: |
+          set -e
+
+          echo "Commit message length:"
+          echo "${#COMMIT_MESSAGE}"
+
+          PAYLOAD=$(jq -n \
+            --argjson id "$BUILD_ID" \
+            --arg source_branch "$SOURCE_BRANCH" \
+            --arg branch "$TRIGGER_BRANCH" \
+            --arg repo "$TRIGGER_REPOSITORY" \
+            --arg sha "$TRIGGER_SHA" \
+            --arg message "$COMMIT_MESSAGE" \
+            '{
+              definition: { id: $id },
+              reason: "manual",
+              sourceBranch: $source_branch,
+              triggerInfo: {
+                "ci.triggerRepository": $repo,
+                "ci.sourceBranch": $branch,
+                "ci.sourceVersion": $sha,
+                "ci.message": $message
+              }
+            }')
+
+          echo "Payload:"
+          echo "$PAYLOAD"
+
+          HTTP_RESPONSE=$(curl -s -w "HTTPSTATUS:%{http_code}" \
+            -X POST \
+            -H "Authorization: Bearer $ADO_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "$PAYLOAD" \
+            "$AZURE_DEVOPS_URL/_apis/build/builds?api-version=7.0")
+
+          echo "$HTTP_RESPONSE"
