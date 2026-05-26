@@ -25,6 +25,7 @@ jobs:
           set -e
 
           echo "Commit message length:"
+          echo "GitHub SHA: $TRIGGER_SHA"
           echo "${#COMMIT_MESSAGE}"
 
           PAYLOAD=$(jq -n \
