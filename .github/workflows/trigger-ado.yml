@@ -13,8 +13,8 @@ jobs:
       - name: Trigger Azure DevOps Pipeline via REST
         env:
           ADO_TOKEN: ${{ secrets.ADO_TOKEN }}
-          AZURE_DEVOPS_URL: https://dev.azure.com/<ORG>/<PROJECT>
-          BUILD_ID: "52"
+          AZURE_DEVOPS_URL: https://dev.azure.com/girishnshet10/inheritedagile
+          BUILD_ID: "32"
           SOURCE_BRANCH: refs/heads/main
           TRIGGER_REPOSITORY: ${{ github.repository }}
           TRIGGER_BRANCH: ${{ github.ref }}
