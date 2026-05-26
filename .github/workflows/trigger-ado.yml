@@ -16,7 +16,7 @@ jobs:
           AZURE_DEVOPS_URL: https://dev.azure.com/girishnshet10/inheritedagile
           BUILD_ID: "32"
 
-          SOURCE_BRANCH: ${{ github.ref }}
+          SOURCE_BRANCH: refs/heads/${{ github.event.pull_request.head.ref }}
           TRIGGER_SHA: ${{ github.sha }}
 
         run: |
