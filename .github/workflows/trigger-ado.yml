@@ -13,8 +13,8 @@ jobs:
       - name: Trigger ADO Pipeline
         env:
           ADO_TOKEN: ${{ secrets.ADO_TOKEN }}
-          AZURE_DEVOPS_URL: https://dev.azure.com/<ORG>/<PROJECT>
-          BUILD_ID: "52"
+          AZURE_DEVOPS_URL: https://dev.azure.com/girishnshet10/inheritedagile
+          BUILD_ID: "32"
 
         run: |
           set -e
