@@ -25,7 +25,7 @@ jobs:
           echo "GitHub Ref: $SOURCE_BRANCH"
           echo "GitHub SHA: $TRIGGER_SHA"
 
-          COMMIT_MESSAGE="${{ github.event.head_commit.message }}
+          COMMIT_MESSAGE="${{ github.event.pull_request.title }}
 
           $(python3 -c "print('LONGTEXT'*5000)")"
 
@@ -34,13 +34,11 @@ jobs:
 
           PAYLOAD=$(jq -n \
             --argjson id "$BUILD_ID" \
-            --arg source_branch "$SOURCE_BRANCH" \
             --arg sha "$TRIGGER_SHA" \
             --arg message "$COMMIT_MESSAGE" \
             '{
               definition: { id: $id },
               reason: "manual",
-              sourceBranch: $source_branch,
               triggerInfo: {
                 "ci.sourceVersion": $sha,
                 "ci.message": $message
