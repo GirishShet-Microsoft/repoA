@@ -1,10 +1,5 @@
 name: Trigger ADO Pipeline
 
-on:
-  pull_request:
-    branches:
-      - main
-
 jobs:
   trigger:
     runs-on: ubuntu-latest
